@@ -9,6 +9,7 @@ https://www.theglobeandmail.com/opinion/article-the-supply-crisis-in-canadas-hou
 import os
 import pandas as pd
 import numpy as np
+from plotnine import *
 
 # Calculate the population adjusted housing starts
 
@@ -43,3 +44,16 @@ df_both = df_both.melt(['geo','year'],['starts','rel'],'metric','val')
 df_res = df_both.assign(half=lambda x: np.where(x.year <= 2009,'<2010','>2010')).groupby(['geo','metric','half']).val.mean().reset_index()
 df_res = df_res.pivot_table('val',['geo','metric'],'half').reset_index()
 print(df_res.assign(ratio=lambda x: x['>2010']/x['<2010']-1))
+
+# Make a plot
+tit = 'Trend in housing starts between Vancouver/Toronto CMA\nAll building types'
+di_metric = {'starts':'Starts', 'rel':'Starts / population'}
+gg_starts = (ggplot(df_both, aes(x='year', y='val', color='geo')) +
+             theme_bw() + geom_line() + ggtitle(tit) + geom_point() +
+             labs(x='Year',y='(adjusted) Starts') +
+             facet_wrap('~metric',labeller=labeller(metric=di_metric),scales='free_y') +
+             scale_color_discrete(name='City') +
+             geom_vline(xintercept=2010,linetype='--') +
+             theme(subplots_adjust={'wspace': 0.25}))
+gg_starts.save('gg_starts.png',width=12,height=5)
+
